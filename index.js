@@ -8,17 +8,21 @@ var jsonParser = bodyParser.json()
 
 var app = express();
 
-var tasks = []
+var surrogateKey=0;
+
+var tasks = [];
 
 app.get("/", (req, res, next) => {
     res.json("{ 'message': 'Tasks server online'}");
 });
 
 app.post("/tasks", jsonParser, (req, res, next) => {
-    req.body.id = tasks.length + 1;
+    req.body.id = surrogateKey++;
+    req.body.state = "pending";
     tasks.push(req.body);
     res.send("OK");
 });
+
 
 app.get("/tasks", (req, res, next) => {
     res.json(tasks);
@@ -26,4 +30,32 @@ app.get("/tasks", (req, res, next) => {
 
 app.listen(3000, () => {
     console.log("Servidor HTTP funcionando");
+});
+
+app.get('/tasks/:id', function(req,res) {
+    //res.send("id is set to"+req.params.id)
+    res.json(tasks[req.params.id]);
+});
+
+app.put('/tasks/:id', jsonParser, function(req,res) {
+        res.send("Put invoked " +req.params.id+" any body: " +req.body);
+        tasks[req.params.id]=req.body;
+        req.body.id = parseInt(req.params.id,10);
+        req.body.state = "pending";
+});
+
+app.delete('/tasks/:id', function(req,res) {
+    tasks.splice(req.params.id,1);
+    res.send("delete: "+req.params.id);
+});
+
+app.put('/tasks/:id/:state', jsonParser, function(req,res) {
+    if (req.params.state=="pending") {
+        res.send("Put invoked " +req.params.id+" state: Completed");
+        tasks[req.params.id].state="completed";
+    } else {
+        res.send("Put invoked " +req.params.id+" state: Pending");
+        req.body.id = parseInt(req.params.id,10);
+        tasks[req.params.id].state="pending";
+    }
 });
